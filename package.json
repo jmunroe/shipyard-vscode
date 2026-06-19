@@ -1,0 +1,113 @@
+{
+  "name": "shipyard-vscode",
+  "displayName": "Shipyard",
+  "description": "Visualize your Shipyard sprint, backlog, and spec in the VS Code sidebar.",
+  "version": "0.1.0",
+  "publisher": "jmunroe",
+  "license": "MIT",
+  "author": {
+    "name": "James Munroe"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmunroe/shipyard-vscode.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "shipyard",
+    "agile",
+    "sprint",
+    "backlog",
+    "claude-code"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:**/.shipyard"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "shipyard",
+          "title": "Shipyard",
+          "icon": "media/shipyard.svg"
+        }
+      ]
+    },
+    "views": {
+      "shipyard": [
+        {
+          "id": "shipyard.sprint",
+          "name": "Sprint"
+        },
+        {
+          "id": "shipyard.backlog",
+          "name": "Backlog"
+        },
+        {
+          "id": "shipyard.spec",
+          "name": "Spec"
+        },
+        {
+          "id": "shipyard.bugs",
+          "name": "Bugs"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "shipyard.sprint",
+        "contents": "No Shipyard project found in this workspace.\nShipyard stores its data in a .shipyard/ folder at the repo root.\n[Learn about Shipyard](https://github.com/Acendas/shipyard)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "shipyard.refresh",
+        "title": "Shipyard: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "shipyard.openConfig",
+        "title": "Shipyard: Open Project Config",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "shipyard.refresh",
+          "when": "view == shipyard.sprint || view == shipyard.backlog || view == shipyard.spec || view == shipyard.bugs",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.openConfig",
+          "when": "view == shipyard.sprint",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "package": "node esbuild.mjs --production && vsce package",
+    "typecheck": "tsc --noEmit",
+    "vscode:prepublish": "node esbuild.mjs --production"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}
