@@ -2,3 +2,12 @@ node_modules/
 dist/
 *.vsix
 .DS_Store
+
+# Claude Code local memory (machine-specific paths — never commit)
+.claude/projects/
+# Claude Code per-user local settings (machine-local permissions)
+.claude/settings.local.json
+# Shipyard task worktrees (temporary, created by builder subagents)
+.claude/worktrees/
+# Shipyard in-project data-dir breadcrumb (machine-local symlink/junction)
+.shipyard
