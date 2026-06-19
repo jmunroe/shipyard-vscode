@@ -69,17 +69,20 @@ npm run compile      # esbuild bundle → dist/extension.js (vscode external, cj
 npm run watch        # rebuild on change
 npm run typecheck    # tsc --noEmit (strict)
 npm run package      # production bundle + vsce package → .vsix
+npm run smoke -- <path-to-.shipyard>   # parse a real .shipyard, print a summary
 ```
 
 - **F5** in VS Code launches an Extension Development Host; open a folder that
   contains `.shipyard/` to see the views populate.
-- **Smoke-test the parser** against real data (no VS Code needed):
+- **Smoke-test the parser** against real data (no VS Code needed) via `npm run smoke`,
+  which wraps the esbuild bundle + node run:
   ```sh
-  npx esbuild test/smoke.ts --bundle --platform=node --format=cjs --outfile=/tmp/sy-smoke.cjs \
-    && node /tmp/sy-smoke.cjs /path/to/repo/.shipyard
+  npm run smoke -- /path/to/repo/.shipyard
   ```
-  (CJS format + async-IIFE wrapper are required: `gray-matter` is CJS and esbuild
-  rejects top-level await under cjs.)
+  npm appends the `--`-args to the end of the script, so the path lands on the
+  final `node` invocation. The bundle is written to `node_modules/.cache/`. CJS
+  format + async-IIFE wrapper are required: `gray-matter` is CJS and esbuild
+  rejects top-level await under cjs.
 
 A known-good `.shipyard` to test against: `~/src/clients/stilwaterai/askblaze/.shipyard`.
 
@@ -97,5 +100,4 @@ A known-good `.shipyard` to test against: `~/src/clients/stilwaterai/askblaze/.s
 - Actions that send `/shipyard:ship-*` into the active Claude Code terminal.
 - A marketplace `icon.png` (currently omitted; sidebar SVG is `media/shipyard.svg`)
   before publishing to the VS Code Marketplace.
-- An `npm run smoke` script wrapping the parser check above.
 ```
