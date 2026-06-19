@@ -63,6 +63,10 @@ npm run package      # produces a .vsix via @vscode/vsce
 Frontmatter is parsed with [`gray-matter`](https://github.com/jonschlinkert/gray-matter);
 the schemas mirror the Shipyard plugin templates.
 
+## Credits
+
+Built by **James Munroe** at **Earthdata Associates**.
+
 ## License
 
-MIT © James Munroe
+MIT © James Munroe (Earthdata Associates)
