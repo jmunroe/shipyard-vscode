@@ -8,3 +8,13 @@ tsconfig.json
 **/*.map
 **/tsconfig.json
 .github/**
+# Build-only icon pipeline — not shipped (the rendered media/icon.png is)
+scripts/**
+media/icon.svg
+# Repo/dev tooling that must never ship in the published extension.
+# .shipyard is a symlink to the Shipyard data dir; including it also breaks
+# vsce's secret scan (EISDIR on the symlinked directory).
+.shipyard
+.shipyard/**
+.claude/**
+CLAUDE.md
