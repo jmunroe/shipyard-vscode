@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
 import { ShipyardStore } from './store';
+import { renderDashboard } from './dashboard/render';
+
+/** Trailing debounce (ms) — coalesce the watcher's burst of events per write. */
+const REFRESH_DEBOUNCE_MS = 100;
 
 /**
  * The Shipyard dashboard webview — a single `WebviewPanel` mirroring the
@@ -16,6 +20,7 @@ export class DashboardPanel {
   private static current: DashboardPanel | undefined;
 
   private readonly disposables: vscode.Disposable[] = [];
+  private refreshTimer: ReturnType<typeof setTimeout> | undefined;
 
   /** Open the dashboard, or reveal it if already open. */
   static show(store: ShipyardStore): void {
@@ -37,37 +42,34 @@ export class DashboardPanel {
     private readonly store: ShipyardStore,
   ) {
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+    // Live refresh: re-render on any store change, debounced so a single
+    // sprint write (which fires many undebounced watcher events) renders once.
+    this.store.onDidChange(() => this.scheduleRender(), null, this.disposables);
     this.render();
   }
 
-  private render(): void {
-    this.panel.webview.html = DashboardPanel.shell(
-      this.store.shipyardDir ? 'Loading the Shipyard dashboard…' : 'No Shipyard project in this workspace.',
-    );
+  /** Trailing-debounce a re-render: clear and reset the timer on each event. */
+  private scheduleRender(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+    }
+    this.refreshTimer = setTimeout(() => {
+      this.refreshTimer = undefined;
+      this.render();
+    }, REFRESH_DEBOUNCE_MS);
   }
 
-  /**
-   * The hardened HTML shell: strict CSP (no scripts; only inline styles), into
-   * which T008's rendered markup is dropped. Fully static — no nonce needed.
-   */
-  private static shell(body: string): string {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shipyard Dashboard</title>
-</head>
-<body>
-  ${body}
-</body>
-</html>`;
+  /** Read-only: reads the store snapshot and writes the webview HTML. */
+  private render(): void {
+    this.panel.webview.html = renderDashboard(this.store.getData());
   }
 
   private dispose(): void {
     DashboardPanel.current = undefined;
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
     while (this.disposables.length) {
       this.disposables.pop()?.dispose();
     }

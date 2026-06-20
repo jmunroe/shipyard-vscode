@@ -2,7 +2,8 @@
 // Not part of the extension bundle; run via esbuild + node (see command below).
 import { loadProject } from '../src/shipyard/repository';
 import { computeDashboardModel, DashboardModel } from '../src/dashboard/model';
-import { renderDashboardHtml } from '../src/dashboard/render';
+import { renderDashboardHtml, renderDashboard } from '../src/dashboard/render';
+import { ProjectData } from '../src/shipyard/model';
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) {
@@ -76,6 +77,23 @@ assert(html.includes('var(--vscode-'), 'rendered HTML must use var(--vscode-*) t
 assert(html.includes('role="progressbar"'), 'rendered HTML must mark progress bars with role="progressbar"');
 assert(html.includes('&lt;script&gt;'), 'hostile titles must be HTML-escaped');
 console.log('dashboard-render: ok');
+
+// --- T009: empty / absent project renders a friendly state, no throw ---
+const emptyData: ProjectData = {
+  projectName: 'Shipyard',
+  features: [],
+  tasks: [],
+  epics: [],
+  bugs: [],
+  ideas: [],
+  sprint: undefined,
+  backlog: [],
+};
+for (const sample of [undefined, emptyData]) {
+  const out = renderDashboard(sample);
+  assert(out.includes('No Shipyard project'), 'empty state must show a friendly "No Shipyard project" message');
+}
+console.log('dashboard-empty: ok');
 }
 
 main(dir);

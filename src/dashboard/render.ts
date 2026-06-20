@@ -4,7 +4,26 @@
 // dashboard adapts to the active theme; all dynamic text is routed through
 // `escapeHtml` (CSP does not stop a stray `<`/`&` from breaking markup).
 
-import { DashboardModel, EpicRollup, StatusBreakdown, WaveProgress } from './model';
+import { ProjectData } from '../shipyard/model';
+import {
+  computeDashboardModel,
+  DashboardModel,
+  EpicRollup,
+  StatusBreakdown,
+  WaveProgress,
+} from './model';
+
+/** Shared document head: charset, strict CSP, viewport, title, and styles. */
+function documentHead(style: string): string {
+  return `<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shipyard Dashboard</title>
+  ${style}
+</head>`;
+}
 
 /** Escape the five HTML-significant characters in dynamic text. */
 export function escapeHtml(value: string): string {
@@ -121,14 +140,7 @@ export function renderDashboardHtml(model: DashboardModel): string {
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shipyard Dashboard</title>
-  ${style}
-</head>
+${documentHead(style)}
 <body>
   ${overall}
   ${statusSection(model.byStatus)}
@@ -137,4 +149,48 @@ export function renderDashboardHtml(model: DashboardModel): string {
   ${counts}
 </body>
 </html>`;
+}
+
+/** True when there is no project to show (absent or wholly empty snapshot). */
+function isEmpty(data: ProjectData | undefined): boolean {
+  if (!data) {
+    return true;
+  }
+  return (
+    data.features.length === 0 &&
+    data.epics.length === 0 &&
+    data.tasks.length === 0 &&
+    data.bugs.length === 0 &&
+    data.ideas.length === 0 &&
+    !data.sprint
+  );
+}
+
+/** The friendly empty state shown when no `.shipyard` project is present. */
+export function renderEmptyState(): string {
+  const style = `<style>
+  body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 2rem 1rem; line-height: 1.5; }
+  h1 { font-size: 1.3rem; }
+  p { color: var(--vscode-descriptionForeground); }
+</style>`;
+  return `<!DOCTYPE html>
+<html lang="en">
+${documentHead(style)}
+<body>
+  <h1>No Shipyard project</h1>
+  <p>No <code>.shipyard</code> folder was found in this workspace. The dashboard will populate once a Shipyard project is present.</p>
+</body>
+</html>`;
+}
+
+/**
+ * Top-level, vscode-free entry point: render the dashboard from a `ProjectData`
+ * snapshot, or the empty state when the snapshot is absent/empty. The panel
+ * (T009) assigns the result to `panel.webview.html`.
+ */
+export function renderDashboard(data: ProjectData | undefined): string {
+  if (isEmpty(data)) {
+    return renderEmptyState();
+  }
+  return renderDashboardHtml(computeDashboardModel(data as ProjectData));
 }
