@@ -1,6 +1,13 @@
 // Standalone smoke check: load a real .shipyard dir and print a summary.
 // Not part of the extension bundle; run via esbuild + node (see command below).
 import { loadProject } from '../src/shipyard/repository';
+import { computeDashboardModel } from '../src/dashboard/model';
+
+function assert(cond: boolean, msg: string): void {
+  if (!cond) {
+    throw new Error(`smoke assertion failed: ${msg}`);
+  }
+}
 
 const dir = process.argv[2];
 if (!dir) {
@@ -28,6 +35,24 @@ console.log('\nepics:');
 for (const ep of data.epics) {
   const kids = data.features.filter((f) => f.epic === ep.id);
   console.log(`  ${ep.id} ${ep.title} — ${kids.length} features`);
+}
+
+// --- T007: dashboard rollup model ---
+const dash = computeDashboardModel(data);
+console.log(
+  `\ndashboard: ${dash.completionPct}% done, ${dash.epics.length} epics, ${dash.openBugs} bugs, ${dash.pendingIdeas} ideas`,
+);
+assert(dash.completionPct >= 0 && dash.completionPct <= 100, `completionPct in [0,100], got ${dash.completionPct}`);
+for (const ep of dash.epics) {
+  assert(ep.pct >= 0 && ep.pct <= 100, `epic ${ep.id} pct in [0,100], got ${ep.pct}`);
+  assert(ep.pointsDone >= 0 && ep.pointsTotal >= 0, `epic ${ep.id} non-negative points`);
+}
+assert(dash.openBugs >= 0, `openBugs non-negative, got ${dash.openBugs}`);
+assert(dash.pendingIdeas >= 0, `pendingIdeas non-negative, got ${dash.pendingIdeas}`);
+assert(dash.pointsDone >= 0 && dash.pointsTotal >= 0, 'overall points non-negative');
+assert(dash.pointsDone <= dash.pointsTotal, 'pointsDone <= pointsTotal');
+for (const w of dash.waves) {
+  assert(w.done >= 0 && w.done <= w.total, `wave ${w.index} done in [0,total]`);
 }
 }
 
