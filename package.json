@@ -6,6 +6,10 @@
   "publisher": "earthdata",
   "license": "MIT",
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0E639C",
+    "theme": "dark"
+  },
   "author": {
     "name": "James Munroe"
   },
