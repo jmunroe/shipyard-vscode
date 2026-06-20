@@ -1,8 +1,17 @@
-<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="4" r="2"/>
-  <line x1="12" y1="6" x2="12" y2="21"/>
-  <line x1="8" y1="10" x2="16" y2="10"/>
-  <path d="M4 13a8 8 0 0 0 16 0"/>
-  <line x1="4" y1="13" x2="6" y2="12"/>
-  <line x1="20" y1="13" x2="18" y2="12"/>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <!-- jib (horizontal boom) -->
+  <path d="M3 6 H20"/>
+  <!-- tower apex + stay cables to each jib tip -->
+  <path d="M6.7 6 L8.5 3.2 L10.3 6"/>
+  <path d="M8.5 3.2 L19.4 5.8 M8.5 3.2 L3.4 5.8"/>
+  <!-- mast -->
+  <path d="M8.5 6 V18"/>
+  <!-- tower base legs -->
+  <path d="M8.5 18 L5.6 21.4 M8.5 18 L11.4 21.4"/>
+  <!-- counterweight on the short arm -->
+  <rect x="3" y="6" width="2.3" height="2.4" rx="0.3"/>
+  <!-- hoist cable from trolley down to the load -->
+  <path d="M17 6 V10.4"/>
+  <!-- container being lifted -->
+  <rect x="14.8" y="10.4" width="4.4" height="3.2" rx="0.3"/>
 </svg>
