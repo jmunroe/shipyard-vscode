@@ -4,6 +4,24 @@ All notable changes to the Shipyard VS Code extension are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-20
+
+### Added
+
+- **Shipyard: Open Dashboard** — a webview dashboard mirroring `ship-status`:
+  overall completion %, features-by-status, per-epic progress bars, sprint goal +
+  per-wave task counts, and open-bug / pending-idea counts. Theme-adaptive
+  (`var(--vscode-*)`), HTML-escaped, accessible progress bars, debounced live
+  refresh, and a friendly empty state. Opens from the command palette or a
+  sidebar title-bar button.
+
+### Fixed
+
+- Live refresh now fires for projects whose `.shipyard/` is a symlink into the
+  plugin data store (the normal Shipyard layout). Previously the watcher did not
+  follow the symlink outside the workspace, so the tree views and dashboard only
+  updated on a manual **Shipyard: Refresh**.
+
 ## [0.1.0] - 2026-06-20
 
 First public release on the VS Code Marketplace.
@@ -21,4 +39,5 @@ First public release on the VS Code Marketplace.
 - A welcome view that points to Shipyard when no `.shipyard/` project is present
   in the workspace.
 
+[0.2.0]: https://github.com/jmunroe/shipyard-vscode/releases/tag/v0.2.0
 [0.1.0]: https://github.com/jmunroe/shipyard-vscode/releases/tag/v0.1.0
