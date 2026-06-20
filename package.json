@@ -1,6 +1,6 @@
 {
   "name": "shipyard-vscode",
-  "displayName": "Shipyard",
+  "displayName": "Shipyard for VS Code",
   "description": "Visualize your Shipyard sprint, backlog, and spec in the VS Code sidebar.",
   "version": "0.1.0",
   "publisher": "earthdata",
