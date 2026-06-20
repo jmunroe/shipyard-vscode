@@ -76,6 +76,7 @@ assert(!html.includes('<script>'), 'rendered HTML must not contain a literal <sc
 assert(html.includes('var(--vscode-'), 'rendered HTML must use var(--vscode-*) theming');
 assert(html.includes('role="progressbar"'), 'rendered HTML must mark progress bars with role="progressbar"');
 assert(html.includes('&lt;script&gt;'), 'hostile titles must be HTML-escaped');
+assert(html.includes('&amp;'), 'ampersands in dynamic text must be HTML-escaped');
 console.log('dashboard-render: ok');
 
 // --- T009: empty / absent project renders a friendly state, no throw ---
