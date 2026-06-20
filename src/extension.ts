@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { ShipyardStore } from './store';
 import { DashboardPanel } from './dashboard';
 import {
@@ -36,14 +37,37 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   // Auto-refresh when any Shipyard file changes on disk.
-  const watcher = vscode.workspace.createFileSystemWatcher('**/.shipyard/**');
   const onChange = () => store.refresh();
-  watcher.onDidChange(onChange);
-  watcher.onDidCreate(onChange);
-  watcher.onDidDelete(onChange);
-  context.subscriptions.push(watcher);
+  const watch = (pattern: vscode.GlobPattern): void => {
+    const w = vscode.workspace.createFileSystemWatcher(pattern);
+    w.onDidChange(onChange);
+    w.onDidCreate(onChange);
+    w.onDidDelete(onChange);
+    context.subscriptions.push(w);
+  };
+
+  // Workspace-relative watcher: handles a real (non-symlink) .shipyard and
+  // catches creation/deletion of the .shipyard entry itself.
+  watch('**/.shipyard/**');
 
   await store.refresh();
+
+  // Shipyard normally stores its data under the plugin cache and symlinks
+  // `<workspace>/.shipyard` to it. VS Code's recursive watcher does not follow a
+  // symlink that points outside the workspace, so the glob above never sees
+  // writes to the real target — live refresh would silently never fire. Add an
+  // absolute watcher on the resolved target directory to cover that (the common)
+  // case. See also paths.findShipyardDir, which returns the symlink path.
+  if (store.shipyardDir) {
+    try {
+      const realDir = fs.realpathSync(store.shipyardDir);
+      if (realDir !== store.shipyardDir) {
+        watch(new vscode.RelativePattern(vscode.Uri.file(realDir), '**'));
+      }
+    } catch {
+      // Broken/unreadable symlink — the workspace-relative watcher still stands.
+    }
+  }
 }
 
 export function deactivate(): void {
