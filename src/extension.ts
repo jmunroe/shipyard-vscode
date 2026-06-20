@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ShipyardStore } from './store';
+import { DashboardPanel } from './dashboard';
 import {
   BacklogProvider,
   BugsProvider,
@@ -31,6 +32,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       const uri = vscode.Uri.joinPath(vscode.Uri.file(store.shipyardDir), 'config.md');
       await vscode.window.showTextDocument(uri);
     }),
+    vscode.commands.registerCommand('shipyard.openDashboard', () => DashboardPanel.show(store)),
   );
 
   // Auto-refresh when any Shipyard file changes on disk.

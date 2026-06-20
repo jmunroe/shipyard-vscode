@@ -81,6 +81,11 @@
         "command": "shipyard.openConfig",
         "title": "Shipyard: Open Project Config",
         "icon": "$(gear)"
+      },
+      {
+        "command": "shipyard.openDashboard",
+        "title": "Shipyard: Open Dashboard",
+        "icon": "$(dashboard)"
       }
     ],
     "menus": {
@@ -93,6 +98,11 @@
         {
           "command": "shipyard.openConfig",
           "when": "view == shipyard.sprint",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.openDashboard",
+          "when": "view == shipyard.sprint || view == shipyard.backlog || view == shipyard.spec || view == shipyard.bugs",
           "group": "navigation"
         }
       ]
