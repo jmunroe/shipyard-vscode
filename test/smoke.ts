@@ -1,7 +1,8 @@
 // Standalone smoke check: load a real .shipyard dir and print a summary.
 // Not part of the extension bundle; run via esbuild + node (see command below).
 import { loadProject } from '../src/shipyard/repository';
-import { computeDashboardModel } from '../src/dashboard/model';
+import { computeDashboardModel, DashboardModel } from '../src/dashboard/model';
+import { renderDashboardHtml } from '../src/dashboard/render';
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) {
@@ -54,6 +55,27 @@ assert(dash.pointsDone <= dash.pointsTotal, 'pointsDone <= pointsTotal');
 for (const w of dash.waves) {
   assert(w.done >= 0 && w.done <= w.total, `wave ${w.index} done in [0,total]`);
 }
+
+// --- T008: dashboard HTML render (escaping, theming, accessibility) ---
+const hostile: DashboardModel = {
+  projectName: '<script>alert(1)</script>',
+  completionPct: 50,
+  pointsDone: 5,
+  pointsTotal: 10,
+  byStatus: { proposed: 1, approved: 0, inProgress: 1, done: 1, deployed: 0, released: 0, cancelled: 0 },
+  epics: [{ id: 'E001', title: '<script>alert(1)</script>', pointsDone: 5, pointsTotal: 10, pct: 50 }],
+  sprintId: 'sprint-x',
+  sprintGoal: 'Ship <b>everything</b> & more',
+  waves: [{ index: 1, done: 1, total: 2 }],
+  openBugs: 0,
+  pendingIdeas: 3,
+};
+const html = renderDashboardHtml(hostile);
+assert(!html.includes('<script>'), 'rendered HTML must not contain a literal <script>');
+assert(html.includes('var(--vscode-'), 'rendered HTML must use var(--vscode-*) theming');
+assert(html.includes('role="progressbar"'), 'rendered HTML must mark progress bars with role="progressbar"');
+assert(html.includes('&lt;script&gt;'), 'hostile titles must be HTML-escaped');
+console.log('dashboard-render: ok');
 }
 
 main(dir);
