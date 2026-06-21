@@ -25,9 +25,10 @@ the publish-runbook idea, IDEA-007.)
 1. Bump `version` in `package.json`.
 2. Add a `## [X.Y.Z] - YYYY-MM-DD` section to `CHANGELOG.md` (the workflow draws
    the GitHub Release notes from it, and fails if the section is missing).
-3. Commit both, then tag and push:
+3. Commit both, then tag and push. Use an **annotated** tag (`-a`) — this repo's
+   git config rejects lightweight tags with "fatal: no tag message?":
    ```sh
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push && git push --tags
    ```
 4. Watch the **Release** workflow in the Actions tab. It guards that the tag
