@@ -19,8 +19,12 @@ const CLOSED_BUG_STATUSES = new Set([
   'wontfix',
   'duplicate',
 ]);
-/** Idea statuses that are no longer pending. */
-const RESOLVED_IDEA_STATUSES = new Set(['converted', 'rejected', 'done', 'closed']);
+/**
+ * Idea statuses that are no longer pending. Shipyard's idea lifecycle is just
+ * `proposed` (the template default) → `graduated` (promoted to a feature, with a
+ * `graduated_to: FNNN` pointer). Shipyard's own listings hide graduated ideas.
+ */
+const RESOLVED_IDEA_STATUSES = new Set(['graduated']);
 
 export interface StatusBreakdown {
   proposed: number;

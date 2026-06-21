@@ -176,10 +176,13 @@ export class SpecProvider extends TreeProviderBase {
       roots.push(node);
     }
 
-    if (data.ideas.length > 0) {
-      const node = new ShipyardNode(`Ideas (${data.ideas.length})`, Collapsed);
+    // Graduated ideas were promoted to features and are kept on disk only as a
+    // historical record; Shipyard's own listings hide them, so we do too.
+    const activeIdeas = data.ideas.filter((idea) => idea.status !== 'graduated');
+    if (activeIdeas.length > 0) {
+      const node = new ShipyardNode(`Ideas (${activeIdeas.length})`, Collapsed);
       node.iconPath = new vscode.ThemeIcon('lightbulb');
-      node.children = data.ideas.map((idea) => entityNode(idea));
+      node.children = activeIdeas.map((idea) => entityNode(idea));
       roots.push(node);
     }
 

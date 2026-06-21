@@ -57,6 +57,11 @@ any change.
 
 - Features: `proposed | approved | in-progress | done | deployed | released | cancelled`
 - Tasks: `pending | in-progress | done | blocked | needs-attention | approved`
+- Ideas: `proposed | graduated` — that's the whole lifecycle. Graduating an idea
+  (via `/ship-discuss`) sets `status: graduated` + `graduated_to: FNNN` and leaves
+  the file in place (Shipyard soft-deletes; physical removal is manual). We hide
+  graduated ideas from the Spec tree and the dashboard's "Pending ideas" count,
+  matching Shipyard's own listings (`RESOLVED_IDEA_STATUSES` in dashboard/model.ts).
 
 Reference for the full dashboard logic (a good spec if/when we build a webview
 dashboard): the plugin's `skills/ship-status/SKILL.md`.
@@ -95,9 +100,8 @@ A known-good `.shipyard` to test against: `~/src/clients/stilwaterai/askblaze/.s
 
 ## Not done yet (v2 candidates)
 
-- Webview dashboard mirroring the ASCII `ship-status` output (progress bars,
-  epic rollups, health/velocity trends).
-- Actions that send `/shipyard:ship-*` into the active Claude Code terminal.
-- A marketplace `icon.png` (currently omitted; sidebar SVG is `media/shipyard.svg`)
-  before publishing to the VS Code Marketplace.
+- Health & velocity trends on the dashboard (F004) — the webview dashboard
+  shipped in v0.2.0 with completion %, epic rollups, and per-wave counts, but
+  not trend lines yet.
+- Actions that send `/shipyard:ship-*` into the active Claude Code terminal (F005).
 ```
