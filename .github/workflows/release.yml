@@ -1,0 +1,74 @@
+name: Release
+
+# Publish to the VS Code Marketplace when a vX.Y.Z tag is pushed. Ordinary
+# branch pushes never trigger this (tags only). See PUBLISHING.md for the
+# required VSCE_PAT secret and the release runbook.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Needed by the Create GitHub Release step (softprops/action-gh-release).
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Guard: the tag (minus the leading "v") must match package.json. Prevents
+      # shipping the wrong version under a tag. Exports VERSION for later steps.
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+          echo "VERSION=$PKG_VERSION" >> "$GITHUB_ENV"
+
+      # Standing quality gates. Any failure here stops the job before publish,
+      # so nothing reaches the Marketplace and no GitHub Release is created.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Smoke test (CI fixture)
+        run: npm run smoke -- test/fixtures/.shipyard
+
+      # Extract release notes before publishing: a missing/empty CHANGELOG
+      # section should fail the release rather than half-ship it.
+      - name: Extract release notes from CHANGELOG
+        run: |
+          node scripts/changelog-extract.mjs "$VERSION" > release-notes.md
+          echo "----- release notes -----"
+          cat release-notes.md
+
+      # Package the exact .vsix we publish and attach to the GitHub Release.
+      # vsce runs vscode:prepublish (esbuild --production) during packaging.
+      - name: Package extension
+        run: npx @vscode/vsce package --out "shipyard-vscode-${VERSION}.vsix"
+
+      - name: Publish to VS Code Marketplace
+        run: npx @vscode/vsce publish --packagePath "shipyard-vscode-${VERSION}.vsix"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: shipyard-vscode-${{ env.VERSION }}.vsix

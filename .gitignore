@@ -9,5 +9,7 @@ dist/
 .claude/settings.local.json
 # Shipyard task worktrees (temporary, created by builder subagents)
 .claude/worktrees/
-# Shipyard in-project data-dir breadcrumb (machine-local symlink/junction)
-.shipyard
+# Shipyard in-project data-dir breadcrumb (machine-local symlink/junction).
+# Anchored to the repo root so the committed CI fixture at
+# test/fixtures/.shipyard/ (release-workflow smoke gate) stays tracked.
+/.shipyard
