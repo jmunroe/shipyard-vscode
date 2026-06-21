@@ -2,7 +2,7 @@
   "name": "shipyard-vscode",
   "displayName": "Shipyard for VS Code",
   "description": "Visualize your Shipyard sprint, backlog, and spec in the VS Code sidebar.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "earthdata",
   "license": "MIT",
   "icon": "media/icon.png",

@@ -4,6 +4,22 @@ All notable changes to the Shipyard VS Code extension are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-06-20
+
+### Added
+
+- **CI release workflow** (`.github/workflows/release.yml`): pushing a `vX.Y.Z`
+  tag runs the standing gates (typecheck, compile, smoke against a committed
+  `test/fixtures/.shipyard`), guards that the tag matches `package.json`,
+  publishes to the VS Code Marketplace, and creates a GitHub Release with the
+  packaged `.vsix` and CHANGELOG-derived notes. See `PUBLISHING.md`. (F006)
+
+### Fixed
+
+- Graduated ideas (promoted to features via `/ship-discuss`) are no longer
+  counted in the dashboard's "Pending ideas" total or shown in the Spec tree,
+  matching Shipyard's own listings.
+
 ## [0.2.0] - 2026-06-20
 
 ### Added
