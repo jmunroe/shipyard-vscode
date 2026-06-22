@@ -8,11 +8,16 @@ const None = vscode.TreeItemCollapsibleState.None;
 /** A node in any Shipyard tree. Children are precomputed when the tree builds. */
 export class ShipyardNode extends vscode.TreeItem {
   children?: ShipyardNode[];
+  /** Raw entity id (e.g. 'F003', 'T011'), so context commands resolve <id> without parsing the label. */
+  itemId?: string;
 
   constructor(label: string, collapsibleState = None) {
     super(label, collapsibleState);
   }
 }
+
+/** Tree-node types that carry a per-type contextValue gating context menus. */
+type EntityKind = 'feature' | 'idea' | 'epic' | 'bug' | 'task';
 
 function statusIcon(status?: string): vscode.ThemeIcon {
   switch ((status ?? '').toLowerCase()) {
@@ -47,13 +52,14 @@ function info(message: string, icon = 'info'): ShipyardNode {
 }
 
 /** Build a leaf node for any entity that has an id, title, status and file. */
-function entityNode(entity: BaseEntity, description?: string): ShipyardNode {
+function entityNode(entity: BaseEntity, kind: EntityKind, description?: string): ShipyardNode {
   const node = new ShipyardNode(`${entity.id}  ${entity.title}`);
   node.description = description ?? entity.status;
   node.tooltip = `${entity.id} — ${entity.title}\nstatus: ${entity.status}`;
   node.iconPath = statusIcon(entity.status);
   node.command = openCommand(entity.filePath);
-  node.contextValue = 'shipyardEntity';
+  node.contextValue = kind;
+  node.itemId = entity.id;
   return node;
 }
 
@@ -117,7 +123,7 @@ export class SprintProvider extends TreeProviderBase {
           missing.iconPath = new vscode.ThemeIcon('question');
           return missing;
         }
-        return entityNode(task, [task.status, task.effort].filter(Boolean).join(' · '));
+        return entityNode(task, 'task', [task.status, task.effort].filter(Boolean).join(' · '));
       });
       nodes.push(waveNode);
     });
@@ -142,6 +148,7 @@ export class BacklogProvider extends TreeProviderBase {
       }
       const node = entityNode(
         feature,
+        'feature',
         `#${entry.rank} · ${feature.storyPoints}pts · RICE ${feature.riceScore}`,
       );
       return node;
@@ -162,8 +169,10 @@ export class SpecProvider extends TreeProviderBase {
       node.description = `${done}/${children.length} features`;
       node.iconPath = new vscode.ThemeIcon('milestone');
       node.command = openCommand(epic.filePath);
+      node.contextValue = 'epic';
+      node.itemId = epic.id;
       node.children = children.map((f) =>
-        entityNode(f, `${f.storyPoints}pts · ${f.status}`),
+        entityNode(f, 'feature', `${f.storyPoints}pts · ${f.status}`),
       );
       roots.push(node);
     }
@@ -172,7 +181,7 @@ export class SpecProvider extends TreeProviderBase {
     if (ungrouped.length > 0) {
       const node = new ShipyardNode('Ungrouped features', Collapsed);
       node.iconPath = new vscode.ThemeIcon('folder');
-      node.children = ungrouped.map((f) => entityNode(f, `${f.storyPoints}pts · ${f.status}`));
+      node.children = ungrouped.map((f) => entityNode(f, 'feature', `${f.storyPoints}pts · ${f.status}`));
       roots.push(node);
     }
 
@@ -182,7 +191,7 @@ export class SpecProvider extends TreeProviderBase {
     if (activeIdeas.length > 0) {
       const node = new ShipyardNode(`Ideas (${activeIdeas.length})`, Collapsed);
       node.iconPath = new vscode.ThemeIcon('lightbulb');
-      node.children = activeIdeas.map((idea) => entityNode(idea));
+      node.children = activeIdeas.map((idea) => entityNode(idea, 'idea'));
       roots.push(node);
     }
 
@@ -199,7 +208,7 @@ export class BugsProvider extends TreeProviderBase {
       return [info('No bugs filed', 'check-all')];
     }
     return data.bugs.map((bug) =>
-      entityNode(bug, [bug.severity, bug.status].filter(Boolean).join(' · ')),
+      entityNode(bug, 'bug', [bug.severity, bug.status].filter(Boolean).join(' · ')),
     );
   }
 }
