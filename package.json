@@ -36,6 +36,16 @@
     "workspaceContains:**/.shipyard"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Shipyard",
+      "properties": {
+        "shipyard.autoRunCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "When enabled, Shipyard slash commands sent to the terminal are executed immediately. When disabled (default), they are typed for you to review and run."
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
