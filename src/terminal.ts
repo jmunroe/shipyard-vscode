@@ -7,41 +7,61 @@ const SHIPYARD_TERMINAL_NAME = 'Shipyard';
 // concatenating onto a previously-typed-but-unexecuted command.
 const CLEAR_LINE = '\u0015';
 
-/** A terminal we own, found by name or freshly created. */
-function getOrCreateDedicatedTerminal(): vscode.Terminal {
-  return (
-    vscode.window.terminals.find((t) => t.name === SHIPYARD_TERMINAL_NAME) ??
-    vscode.window.createTerminal(SHIPYARD_TERMINAL_NAME)
-  );
+/** Show the terminal and type the command (clearing the line first). */
+function deliver(terminal: vscode.Terminal, cmd: string, autoRun: boolean): void {
+  // Guard against a terminal the user closed during a launch delay.
+  if (!vscode.window.terminals.includes(terminal)) {
+    return;
+  }
+  terminal.show(); // make the typed command visible
+  // `autoRun` controls the trailing newline: true -> execute, false -> leave it
+  // typed for review. The leading Ctrl-U guarantees we start at an empty prompt.
+  terminal.sendText(CLEAR_LINE + cmd, autoRun);
 }
 
 /**
- * Resolve which terminal to send to, per the `shipyard.terminalTarget` setting:
- * - `dedicated` (default): always a "Shipyard" terminal we own. Predictable —
- *   never hijacks an unrelated focused shell/app. Run Claude Code in it.
- * - `active`: the currently active terminal (falling back to the dedicated one
- *   when none is open). Convenient when Claude Code is focused, but the user
- *   opts into the risk of landing in an unrelated terminal.
+ * Send a Shipyard slash command to a terminal, per the `shipyard.terminalTarget`
+ * setting:
+ * - `dedicated` (default): a "Shipyard" terminal we own. If it already exists we
+ *   send straight to it (Claude Code is presumably running). If we have to create
+ *   it, we first run the launch command (`shipyard.launchCommand`, default
+ *   `claude`) and send the slash command after `shipyard.launchDelayMs` so it
+ *   isn't typed before Claude Code is ready.
+ * - `active`: the currently focused terminal. Falls back to the dedicated path
+ *   (create + launch) when no terminal is open.
  */
-function resolveTargetTerminal(): vscode.Terminal {
-  const target = vscode.workspace
-    .getConfiguration('shipyard')
-    .get<'dedicated' | 'active'>('terminalTarget', 'dedicated');
-
-  if (target === 'active') {
-    return vscode.window.activeTerminal ?? getOrCreateDedicatedTerminal();
-  }
-  return getOrCreateDedicatedTerminal();
-}
-
 export function sendToTerminal(cmd: string): void {
-  const autoRun = vscode.workspace
-    .getConfiguration('shipyard')
-    .get<boolean>('autoRunCommands', false);
-  const terminal = resolveTargetTerminal();
-  terminal.show(); // make the typed command visible
-  // Clear any partially-typed input first, then type the command. `autoRun`
-  // controls the trailing newline: true -> execute, false -> leave it typed for
-  // review. The leading Ctrl-U guarantees we start at an empty prompt.
-  terminal.sendText(CLEAR_LINE + cmd, autoRun);
+  const cfg = vscode.workspace.getConfiguration('shipyard');
+  const autoRun = cfg.get<boolean>('autoRunCommands', false);
+  const target = cfg.get<'dedicated' | 'active'>('terminalTarget', 'dedicated');
+
+  // Active mode: use the focused terminal if there is one.
+  if (target === 'active' && vscode.window.activeTerminal) {
+    deliver(vscode.window.activeTerminal, cmd, autoRun);
+    return;
+  }
+
+  // Dedicated mode (or active with no terminal open): reuse our named terminal
+  // if present, otherwise create it, launch Claude Code, and send after a delay.
+  const existing = vscode.window.terminals.find(
+    (t) => t.name === SHIPYARD_TERMINAL_NAME,
+  );
+  if (existing) {
+    deliver(existing, cmd, autoRun);
+    return;
+  }
+
+  const terminal = vscode.window.createTerminal(SHIPYARD_TERMINAL_NAME);
+  terminal.show();
+
+  const launchCommand = cfg.get<string>('launchCommand', 'claude').trim();
+  if (!launchCommand) {
+    // Launching disabled — just type the command into the fresh shell.
+    deliver(terminal, cmd, autoRun);
+    return;
+  }
+
+  terminal.sendText(launchCommand, true); // start Claude Code (runs with newline)
+  const delayMs = Math.max(0, cfg.get<number>('launchDelayMs', 1500));
+  setTimeout(() => deliver(terminal, cmd, autoRun), delayMs);
 }
