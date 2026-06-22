@@ -5,8 +5,11 @@ project (sprint, backlog, spec, bugs) as native sidebar tree views. Shipyard is 
 Claude Code plugin that runs a spec-driven agile lifecycle and stores all its
 state as Markdown-with-frontmatter under a `.shipyard/` directory at the repo root.
 
-This extension is **read-only** in v1: it visualizes that state, it does not run
-Shipyard commands.
+This extension is **read-only** toward Shipyard state: it never writes under
+`.shipyard/` and never shells out to the plugin CLI itself. "Read-only" here is
+a boundary on what the *extension* does, not a ban on outward actions — it may
+send `/shipyard:ship-*` commands into the user's own terminal (the user's Claude
+Code session does the work). See "Core design decision" below.
 
 ## Core design decision: read files, don't shell out
 
@@ -19,6 +22,12 @@ the on-disk format (stable, template-defined) and works for anyone with a
 
 Frontmatter is parsed with `gray-matter`. The frontmatter schemas mirror the
 Shipyard plugin templates (`templates/feature.md`, `task.md`, `SPRINT.md`, etc.).
+
+**Read-only boundary (precise):** the extension does not write `.shipyard` and
+does not invoke the `shipyard-context`/plugin CLI itself. It *is* allowed to type
+a `/shipyard:ship-*` command into the user's active terminal (F005) — that runs
+in the user's own Claude Code session, which is what mutates state. So "read-only"
+constrains the extension's direct effects, not the user actions it can trigger.
 
 ## Architecture
 
@@ -103,5 +112,4 @@ A known-good `.shipyard` to test against: `~/src/clients/stilwaterai/askblaze/.s
 - Health & velocity trends on the dashboard (F004) — the webview dashboard
   shipped in v0.2.0 with completion %, epic rollups, and per-wave counts, but
   not trend lines yet.
-- Actions that send `/shipyard:ship-*` into the active Claude Code terminal (F005).
 ```
