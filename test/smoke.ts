@@ -1,7 +1,7 @@
 // Standalone smoke check: load a real .shipyard dir and print a summary.
 // Not part of the extension bundle; run via esbuild + node (see command below).
 import { loadProject } from '../src/shipyard/repository';
-import { computeDashboardModel, DashboardModel } from '../src/dashboard/model';
+import { computeDashboardModel, computeVelocityTrends, DashboardModel } from '../src/dashboard/model';
 import { renderDashboardHtml, renderDashboard } from '../src/dashboard/render';
 import { ProjectData } from '../src/shipyard/model';
 
@@ -70,6 +70,7 @@ const hostile: DashboardModel = {
   waves: [{ index: 1, done: 1, total: 2 }],
   openBugs: 0,
   pendingIdeas: 3,
+  velocity: { weeks: [], perEpic: [], enoughHistory: false, approximate: true },
 };
 const html = renderDashboardHtml(hostile);
 assert(!html.includes('<script>'), 'rendered HTML must not contain a literal <script>');
@@ -95,6 +96,56 @@ for (const sample of [undefined, emptyData]) {
   assert(out.includes('No Shipyard project'), 'empty state must show a friendly "No Shipyard project" message');
 }
 console.log('dashboard-empty: ok');
+
+// --- T015: velocity trends model (weekly ISO buckets + per-epic trajectory) ---
+// Single-week fixture: two done features whose `updated` dates land in the same
+// ISO week → enoughHistory must be false (need ≥2 distinct weeks).
+const oneWeekData: ProjectData = {
+  projectName: 'Velo',
+  features: [
+    {
+      id: 'F100', title: 'A', status: 'done', epic: 'E001', storyPoints: 3, riceScore: 0,
+      tasks: [], filePath: 'F100.md', frontmatter: { updated: '2026-06-22' },
+    },
+    {
+      id: 'F101', title: 'B', status: 'released', epic: '', storyPoints: 2, riceScore: 0,
+      tasks: [], filePath: 'F101.md', frontmatter: { updated: new Date(Date.UTC(2026, 5, 24)) },
+    },
+    {
+      // proposed (not done) → must be excluded from velocity entirely.
+      id: 'F102', title: 'C', status: 'proposed', epic: 'E001', storyPoints: 8, riceScore: 0,
+      tasks: [], filePath: 'F102.md', frontmatter: { updated: '2026-01-01' },
+    },
+  ],
+  tasks: [], epics: [], bugs: [], ideas: [], sprint: undefined, backlog: [],
+};
+const velo = computeVelocityTrends(oneWeekData);
+assert(velo.approximate === true, 'velocity is flagged approximate');
+assert(velo.enoughHistory === false, 'single-week completions → enoughHistory false');
+assert(velo.weeks.length >= 1, 'single-week fixture yields at least one bucket');
+for (let i = 0; i < velo.weeks.length; i++) {
+  const w = velo.weeks[i];
+  assert(/^\d{4}-W\d{2}$/.test(w.weekKey), `weekKey is YYYY-Www, got ${w.weekKey}`);
+  assert(w.points >= 0 && w.items >= 0, `week ${w.weekKey} non-negative points/items`);
+  if (i > 0) {
+    assert(velo.weeks[i - 1].weekKey <= w.weekKey, 'week buckets sorted ascending by weekKey');
+  }
+}
+// proposed feature's 8 points must not appear; only done(3)+released(2)=5.
+const totalPts = velo.weeks.reduce((s, w) => s + w.points, 0);
+assert(totalPts === 5, `only done/released points counted, expected 5 got ${totalPts}`);
+// empty-epic feature (F101) must not synthesize a phantom "" epic.
+assert(velo.perEpic.every((e) => e.epicId !== ''), 'no phantom empty-epic trajectory');
+
+// Live data: trends recompute on the real .shipyard and exposed on the model.
+const dashWithVelo = computeDashboardModel(data);
+assert(dashWithVelo.velocity.approximate === true, 'dashboard exposes approximate velocity');
+for (const w of dashWithVelo.velocity.weeks) {
+  assert(w.points >= 0 && w.items >= 0, `live week ${w.weekKey} non-negative`);
+}
+console.log(
+  `velocity-trends: ok (weeks=${velo.weeks.length}, enoughHistory=${velo.enoughHistory}; live weeks=${dashWithVelo.velocity.weeks.length})`,
+);
 }
 
 main(dir);
