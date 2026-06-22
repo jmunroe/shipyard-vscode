@@ -10,6 +10,8 @@ import {
   DashboardModel,
   EpicRollup,
   StatusBreakdown,
+  VelocityTrends,
+  WeekBucket,
   WaveProgress,
 } from './model';
 
@@ -106,6 +108,100 @@ ${waves
 </section>`;
 }
 
+/** Short, human-readable week label "Www" from an ISO "YYYY-Www" key. */
+function weekLabel(weekKey: string): string {
+  const dash = weekKey.indexOf('-');
+  return dash >= 0 ? weekKey.slice(dash + 1) : weekKey;
+}
+
+/**
+ * Inline SVG bar chart over weekly buckets. `value` picks points or items;
+ * heights scale to the series max. Static markup only — no script. All text is
+ * escaped (week keys are template-generated but escaped defensively).
+ */
+function weeklyBars(weeks: WeekBucket[], value: (w: WeekBucket) => number, title: string): string {
+  const w = 28; // px per bar slot
+  const gap = 8;
+  const h = 80; // chart height
+  const max = Math.max(1, ...weeks.map(value));
+  const width = weeks.length * w + (weeks.length - 1) * gap;
+  const bars = weeks
+    .map((bucket, i) => {
+      const v = value(bucket);
+      const barH = Math.round((v / max) * (h - 18));
+      const x = i * (w + gap);
+      const y = h - barH - 14;
+      const lbl = escapeHtml(weekLabel(bucket.weekKey));
+      return `<rect class="velo-bar" x="${x}" y="${y}" width="${w}" height="${barH}" rx="2"><title>${lbl}: ${v}</title></rect>
+    <text class="velo-val" x="${x + w / 2}" y="${y - 2}" text-anchor="middle">${v}</text>
+    <text class="velo-axis" x="${x + w / 2}" y="${h - 2}" text-anchor="middle">${lbl}</text>`;
+    })
+    .join('\n    ');
+  return `<figure class="velo-chart">
+  <figcaption>${escapeHtml(title)}</figcaption>
+  <svg viewBox="0 0 ${Math.max(width, 1)} ${h}" width="${Math.max(width, 1)}" height="${h}" role="img" aria-label="${escapeHtml(title)}">
+    ${bars}
+  </svg>
+</figure>`;
+}
+
+/** Inline SVG sparkline (polyline) of per-epic completed points over weeks. */
+function epicSparkline(weeks: WeekBucket[]): string {
+  const w = 120;
+  const h = 28;
+  const max = Math.max(1, ...weeks.map((b) => b.points));
+  const n = weeks.length;
+  const step = n > 1 ? w / (n - 1) : 0;
+  const pts = weeks
+    .map((b, i) => {
+      const x = Math.round(i * step);
+      const y = Math.round(h - 2 - (b.points / max) * (h - 4));
+      return `${x},${y}`;
+    })
+    .join(' ');
+  return `<svg class="velo-spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="completed points trajectory">
+    <polyline points="${pts}" fill="none" stroke="var(--vscode-charts-blue, var(--vscode-progressBar-background))" stroke-width="1.5" />
+  </svg>`;
+}
+
+const VELOCITY_DISCLOSURE = 'approximate (based on last-updated dates)';
+
+function velocitySection(velocity: VelocityTrends): string {
+  const disclosure = `<p class="muted velo-note">Trend data is ${escapeHtml(VELOCITY_DISCLOSURE)}.</p>`;
+
+  if (!velocity.enoughHistory) {
+    return `<section class="velocity">
+  <h2>Velocity trends</h2>
+  <p class="muted">Not enough history yet — at least two calendar weeks of completed work are needed to show a trend.</p>
+  ${disclosure}
+</section>`;
+  }
+
+  const pointsChart = weeklyBars(velocity.weeks, (w) => w.points, 'Story points completed per week');
+  const itemsChart = weeklyBars(velocity.weeks, (w) => w.items, 'Items completed per week (throughput)');
+
+  const epicRows = velocity.perEpic.length
+    ? `<ul class="velo-epic-list">
+${velocity.perEpic
+  .map(
+    (t) => `<li><span class="velo-epic-id">${escapeHtml(t.epicId)}</span>${epicSparkline(t.weeks)}</li>`,
+  )
+  .join('\n')}
+  </ul>`
+    : '<p class="muted">No per-epic trajectory.</p>';
+
+  return `<section class="velocity">
+  <h2>Velocity trends</h2>
+  <div class="velo-charts">
+    ${pointsChart}
+    ${itemsChart}
+  </div>
+  <h3 class="velo-sub">Per-epic trajectory</h3>
+  ${epicRows}
+  ${disclosure}
+</section>`;
+}
+
 export function renderDashboardHtml(model: DashboardModel): string {
   const overall = `<section class="overall">
   <h1>${escapeHtml(model.projectName)}</h1>
@@ -136,6 +232,15 @@ export function renderDashboardHtml(model: DashboardModel): string {
   .epic-title { font-weight: 600; }
   .bar { height: 8px; border-radius: 4px; background: var(--vscode-editorWidget-background); border: 1px solid var(--vscode-panel-border); overflow: hidden; }
   .bar-fill { height: 100%; background: var(--vscode-progressBar-background); }
+  h3.velo-sub { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--vscode-descriptionForeground); margin: 1rem 0 0.25rem; }
+  .velo-charts { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 0.5rem; }
+  .velo-chart { margin: 0; }
+  .velo-chart figcaption { font-size: 0.8rem; color: var(--vscode-descriptionForeground); margin-bottom: 0.25rem; }
+  .velo-bar { fill: var(--vscode-progressBar-background); }
+  .velo-val, .velo-axis { fill: var(--vscode-descriptionForeground); font-size: 9px; font-family: var(--vscode-font-family); }
+  .velo-epic-list li { display: flex; align-items: center; gap: 0.75rem; padding: 0.15rem 0; }
+  .velo-epic-id { font-variant-numeric: tabular-nums; min-width: 3rem; }
+  .velo-note { font-size: 0.8rem; font-style: italic; margin-top: 0.5rem; }
 </style>`;
 
   return `<!DOCTYPE html>
@@ -145,6 +250,7 @@ ${documentHead(style)}
   ${overall}
   ${statusSection(model.byStatus)}
   ${epicSection(model.epics)}
+  ${velocitySection(model.velocity)}
   ${waveSection(model.sprintGoal, model.waves)}
   ${counts}
 </body>

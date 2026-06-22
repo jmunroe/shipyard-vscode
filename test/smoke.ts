@@ -146,6 +146,51 @@ for (const w of dashWithVelo.velocity.weeks) {
 console.log(
   `velocity-trends: ok (weeks=${velo.weeks.length}, enoughHistory=${velo.enoughHistory}; live weeks=${dashWithVelo.velocity.weeks.length})`,
 );
+
+// --- T016: velocity trends SVG section render ---
+// ≥2-week fixture: completions land in two distinct ISO weeks → a chart renders
+// (inline <svg>) plus the unconditional approximate-data disclosure label.
+const twoWeekData: ProjectData = {
+  projectName: 'Velo',
+  features: [
+    {
+      id: 'F200', title: 'A', status: 'done', epic: 'E001', storyPoints: 3, riceScore: 0,
+      tasks: [], filePath: 'F200.md', frontmatter: { updated: new Date(Date.UTC(2026, 5, 15)) },
+    },
+    {
+      id: 'F201', title: 'B', status: 'released', epic: 'E001', storyPoints: 5, riceScore: 0,
+      tasks: [], filePath: 'F201.md', frontmatter: { updated: new Date(Date.UTC(2026, 5, 22)) },
+    },
+  ],
+  tasks: [], epics: [{ id: 'E001', title: 'Epic One', status: 'in-progress', filePath: 'E001.md', frontmatter: {} }],
+  bugs: [], ideas: [], sprint: undefined, backlog: [],
+};
+const twoWeekModel = computeDashboardModel(twoWeekData);
+assert(twoWeekModel.velocity.enoughHistory === true, 'two-week fixture has enoughHistory');
+const twoWeekHtml = renderDashboardHtml(twoWeekModel);
+assert(twoWeekHtml.includes('<svg'), 'velocity section renders an inline <svg> when there is enough history');
+assert(
+  twoWeekHtml.includes('approximate (based on last-updated dates)'),
+  'velocity section shows the approximate-data disclosure label',
+);
+assert(!twoWeekHtml.includes('<script>'), 'velocity render must not contain a raw <script> (CSP / enableScripts:false)');
+
+// Single-week fixture: only one ISO week of completions → "not enough history"
+// message instead of a chart, but the disclosure label is still present.
+const singleWeekModel = computeDashboardModel(oneWeekData);
+assert(singleWeekModel.velocity.enoughHistory === false, 'single-week fixture has enoughHistory false');
+const singleWeekHtml = renderDashboardHtml(singleWeekModel);
+assert(
+  /not enough history/i.test(singleWeekHtml),
+  'single-week fixture renders a "not enough history" message',
+);
+assert(!singleWeekHtml.includes('<svg'), 'no chart <svg> when there is not enough history');
+assert(
+  singleWeekHtml.includes('approximate (based on last-updated dates)'),
+  'disclosure label is unconditional, present even without enough history',
+);
+assert(!singleWeekHtml.includes('<script>'), 'single-week velocity render must not contain a raw <script>');
+console.log('velocity-render: ok');
 }
 
 main(dir);
