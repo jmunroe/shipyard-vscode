@@ -121,6 +121,14 @@
         "command": "shipyard.sendReview",
         "title": "Shipyard: Review",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "shipyard.discussItem",
+        "title": "Discuss in Shipyard"
+      },
+      {
+        "command": "shipyard.debugBug",
+        "title": "Debug in Shipyard"
       }
     ],
     "menus": {
@@ -164,6 +172,18 @@
           "command": "shipyard.sendBacklog",
           "when": "view == shipyard.backlog && shipyard.hasProject",
           "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "shipyard.discussItem",
+          "when": "viewItem == feature || viewItem == idea || viewItem == epic",
+          "group": "shipyard"
+        },
+        {
+          "command": "shipyard.debugBug",
+          "when": "viewItem == bug",
+          "group": "shipyard"
         }
       ]
     }

@@ -6,6 +6,7 @@ import { sendToTerminal } from './terminal';
 import {
   BacklogProvider,
   BugsProvider,
+  ShipyardNode,
   SpecProvider,
   SprintProvider,
 } from './views';
@@ -52,6 +53,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       vscode.commands.registerCommand(commandId, () => sendToTerminal(slash)),
     );
   }
+
+  // Context-aware send commands: invoked from view/item/context menus, they
+  // receive the clicked ShipyardNode and send an item-scoped slash command using
+  // its itemId (T011). Null-check itemId so container/info nodes are inert.
+  context.subscriptions.push(
+    vscode.commands.registerCommand('shipyard.discussItem', (node?: ShipyardNode) => {
+      if (!node?.itemId) return;
+      sendToTerminal(`/shipyard:ship-discuss ${node.itemId}`);
+    }),
+    vscode.commands.registerCommand('shipyard.debugBug', (node?: ShipyardNode) => {
+      if (!node?.itemId) return;
+      sendToTerminal(`/shipyard:ship-debug ${node.itemId}`);
+    }),
+  );
 
   // Auto-refresh when any Shipyard file changes on disk.
   const onChange = () => store.refresh();
