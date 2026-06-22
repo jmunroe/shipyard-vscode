@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ShipyardStore } from './store';
 import { DashboardPanel } from './dashboard';
+import { sendToTerminal } from './terminal';
 import {
   BacklogProvider,
   BugsProvider,
@@ -35,6 +36,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand('shipyard.openDashboard', () => DashboardPanel.show(store)),
   );
+
+  // Global send commands: each types its mapped plugin-namespaced slash command
+  // into the active terminal (T010's sendToTerminal). Keep this map in sync with
+  // the view/title contributions in package.json.
+  const sendCommands: Record<string, string> = {
+    'shipyard.sendStatus': '/shipyard:ship-status',
+    'shipyard.sendSprint': '/shipyard:ship-sprint',
+    'shipyard.sendBacklog': '/shipyard:ship-backlog',
+    'shipyard.sendExecute': '/shipyard:ship-execute',
+    'shipyard.sendReview': '/shipyard:ship-review',
+  };
+  for (const [commandId, slash] of Object.entries(sendCommands)) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand(commandId, () => sendToTerminal(slash)),
+    );
+  }
 
   // Auto-refresh when any Shipyard file changes on disk.
   const onChange = () => store.refresh();

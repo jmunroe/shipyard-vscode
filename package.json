@@ -96,6 +96,31 @@
         "command": "shipyard.openDashboard",
         "title": "Shipyard: Open Dashboard",
         "icon": "$(dashboard)"
+      },
+      {
+        "command": "shipyard.sendStatus",
+        "title": "Shipyard: Status",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "shipyard.sendSprint",
+        "title": "Shipyard: Sprint",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "shipyard.sendBacklog",
+        "title": "Shipyard: Backlog",
+        "icon": "$(list-ordered)"
+      },
+      {
+        "command": "shipyard.sendExecute",
+        "title": "Shipyard: Execute",
+        "icon": "$(play)"
+      },
+      {
+        "command": "shipyard.sendReview",
+        "title": "Shipyard: Review",
+        "icon": "$(checklist)"
       }
     ],
     "menus": {
@@ -113,6 +138,31 @@
         {
           "command": "shipyard.openDashboard",
           "when": "view == shipyard.sprint || view == shipyard.backlog || view == shipyard.spec || view == shipyard.bugs",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.sendStatus",
+          "when": "(view == shipyard.sprint || view == shipyard.backlog || view == shipyard.spec || view == shipyard.bugs) && shipyard.hasProject",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.sendSprint",
+          "when": "view == shipyard.sprint && shipyard.hasProject",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.sendExecute",
+          "when": "view == shipyard.sprint && shipyard.hasProject",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.sendReview",
+          "when": "view == shipyard.sprint && shipyard.hasProject",
+          "group": "navigation"
+        },
+        {
+          "command": "shipyard.sendBacklog",
+          "when": "view == shipyard.backlog && shipyard.hasProject",
           "group": "navigation"
         }
       ]
