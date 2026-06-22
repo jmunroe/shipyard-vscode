@@ -43,6 +43,16 @@
           "type": "boolean",
           "default": false,
           "description": "When enabled, Shipyard slash commands sent to the terminal are executed immediately. When disabled (default), they are typed for you to review and run."
+        },
+        "shipyard.terminalTarget": {
+          "type": "string",
+          "enum": ["dedicated", "active"],
+          "enumDescriptions": [
+            "Send to a dedicated \"Shipyard\" terminal (created if needed). Predictable — never hijacks another focused terminal. Run Claude Code in this terminal.",
+            "Send to the currently active terminal (a new one is created if none is open). Convenient when Claude Code is focused, but commands can land in an unrelated shell."
+          ],
+          "default": "dedicated",
+          "description": "Which terminal Shipyard sends slash commands to. 'dedicated' (default) keeps a predictable \"Shipyard\" terminal; 'active' uses whatever terminal is focused."
         }
       }
     },
