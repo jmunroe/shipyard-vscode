@@ -147,6 +147,28 @@ console.log(
   `velocity-trends: ok (weeks=${velo.weeks.length}, enoughHistory=${velo.enoughHistory}; live weeks=${dashWithVelo.velocity.weeks.length})`,
 );
 
+// Year-boundary ISO-week bucketing (the trickiest math). ISO week 1 is the week
+// containing the year's first Thursday, so dates near Jan 1 can belong to the
+// prior year's W52/W53: 2027-01-01 → 2026-W53; 2025-12-29 (a Monday) → 2026-W01.
+const boundaryData: ProjectData = {
+  projectName: 'Boundary',
+  features: [
+    {
+      id: 'F300', title: 'NewYear', status: 'done', epic: '', storyPoints: 1, riceScore: 0,
+      tasks: [], filePath: 'F300.md', frontmatter: { updated: new Date(Date.UTC(2027, 0, 1)) },
+    },
+    {
+      id: 'F301', title: 'Monday', status: 'done', epic: '', storyPoints: 1, riceScore: 0,
+      tasks: [], filePath: 'F301.md', frontmatter: { updated: '2025-12-29' },
+    },
+  ],
+  tasks: [], epics: [], bugs: [], ideas: [], sprint: undefined, backlog: [],
+};
+const boundaryKeys = computeVelocityTrends(boundaryData).weeks.map((w) => w.weekKey);
+assert(boundaryKeys.includes('2026-W53'), `2027-01-01 → 2026-W53, got ${boundaryKeys.join(',')}`);
+assert(boundaryKeys.includes('2026-W01'), `2025-12-29 → 2026-W01, got ${boundaryKeys.join(',')}`);
+console.log('velocity-year-boundary: ok');
+
 // --- T016: velocity trends SVG section render ---
 // ≥2-week fixture: completions land in two distinct ISO weeks → a chart renders
 // (inline <svg>) plus the unconditional approximate-data disclosure label.

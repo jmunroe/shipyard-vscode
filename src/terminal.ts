@@ -7,6 +7,14 @@ const SHIPYARD_TERMINAL_NAME = 'Shipyard';
 // concatenating onto a previously-typed-but-unexecuted command.
 const CLEAR_LINE = '\u0015';
 
+// Cold-start launch state. While we're launching Claude Code in a freshly
+// created dedicated terminal, further sends are queued here and flushed (in
+// submission order) once the launch delay elapses — otherwise a second send
+// would find the just-created terminal and deliver immediately, racing ahead of
+// the queued first command and arriving before Claude is ready.
+let launching = false;
+const launchQueue: Array<{ cmd: string; autoRun: boolean }> = [];
+
 /** Show the terminal and type the command (clearing the line first). */
 function deliver(terminal: vscode.Terminal, cmd: string, autoRun: boolean): void {
   // Guard against a terminal the user closed during a launch delay.
@@ -41,6 +49,13 @@ export function sendToTerminal(cmd: string): void {
     return;
   }
 
+  // A cold-start launch is already in flight — queue this command so it lands
+  // after Claude is ready and in submission order, rather than racing ahead.
+  if (launching) {
+    launchQueue.push({ cmd, autoRun });
+    return;
+  }
+
   // Dedicated mode (or active with no terminal open): reuse our named terminal
   // if present, otherwise create it, launch Claude Code, and send after a delay.
   const existing = vscode.window.terminals.find(
@@ -61,7 +76,15 @@ export function sendToTerminal(cmd: string): void {
     return;
   }
 
+  launching = true;
   terminal.sendText(launchCommand, true); // start Claude Code (runs with newline)
   const delayMs = Math.max(0, cfg.get<number>('launchDelayMs', 1500));
-  setTimeout(() => deliver(terminal, cmd, autoRun), delayMs);
+  setTimeout(() => {
+    deliver(terminal, cmd, autoRun);
+    for (const queued of launchQueue) {
+      deliver(terminal, queued.cmd, queued.autoRun);
+    }
+    launchQueue.length = 0;
+    launching = false;
+  }, delayMs);
 }
