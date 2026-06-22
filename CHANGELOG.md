@@ -4,6 +4,25 @@ All notable changes to the Shipyard VS Code extension are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-06-22
+
+### Added
+
+- **Terminal control surface** (F005): send `/shipyard:ship-*` slash commands to a
+  terminal from sidebar title-bar buttons and the command palette
+  (Status / Sprint / Backlog / Execute / Review), plus context-menu actions —
+  "Discuss in Shipyard" (feature/idea/epic → `ship-discuss <id>`) and
+  "Debug in Shipyard" (bug → `ship-debug <id>`). New settings:
+  `shipyard.autoRunCommands` (type vs. execute, default type),
+  `shipyard.terminalTarget` (`dedicated`/`active`, default a managed "Shipyard"
+  terminal), and `shipyard.launchCommand` + `shipyard.launchDelayMs` to launch
+  Claude Code on cold start. The extension types into your terminal only — it never
+  writes `.shipyard` or shells out to the plugin CLI.
+- **Velocity trends** (F004): a new dashboard section charting completed
+  story-points per ISO calendar week (inline SVG, no dependencies), with per-epic
+  trajectory, an "approximate (based on last-updated dates)" disclosure, and a
+  "not enough history yet" state. Derived purely from the in-memory model.
+
 ## [0.2.1] - 2026-06-20
 
 ### Added
