@@ -1,8 +1,8 @@
 name: Release
 
-# Publish to the VS Code Marketplace when a vX.Y.Z tag is pushed. Ordinary
-# branch pushes never trigger this (tags only). See PUBLISHING.md for the
-# required VSCE_PAT secret and the release runbook.
+# Publish to the VS Code Marketplace (and, best-effort, Open VSX) when a vX.Y.Z
+# tag is pushed. Ordinary branch pushes never trigger this (tags only). See
+# PUBLISHING.md for the required VSCE_PAT / OVSX_PAT secrets and the runbook.
 on:
   push:
     tags:
@@ -66,6 +66,19 @@ jobs:
         run: npx @vscode/vsce publish --packagePath "shipyard-vscode-${VERSION}.vsix"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      # Parity publish for the forks (VSCodium / Cursor / Windsurf) that pull from
+      # Open VSX. Reuses the exact .vsix shipped to the Marketplace. Best-effort:
+      # a registry/token/duplicate-version failure here must not red a release the
+      # Marketplace already accepted, so continue-on-error keeps the job green and
+      # still creates the GitHub Release. Re-run `ovsx publish` by hand to recover
+      # parity. The `earthdata` namespace is claimed once out-of-band (see
+      # PUBLISHING.md), not created here.
+      - name: Publish to Open VSX
+        continue-on-error: true
+        run: npx ovsx publish "shipyard-vscode-${VERSION}.vsix" -p "$OVSX_PAT"
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
