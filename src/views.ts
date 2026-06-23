@@ -41,8 +41,14 @@ function statusIcon(status?: string): vscode.ThemeIcon {
   }
 }
 
-function openCommand(filePath: string): vscode.Command {
-  return { command: 'vscode.open', title: 'Open', arguments: [vscode.Uri.file(filePath)] };
+/**
+ * Entity-node click target: open the item by id via `shipyard.openItem`, which
+ * honours the `shipyard.openBehavior` setting (rendered viewer vs raw editor).
+ * The id (not a file path) is passed so the same command id is reused by the
+ * viewer's cross-ref `command:` URIs (T020).
+ */
+function openItemCommand(id: string): vscode.Command {
+  return { command: 'shipyard.openItem', title: 'Open', arguments: [id] };
 }
 
 function info(message: string, icon = 'info'): ShipyardNode {
@@ -57,7 +63,7 @@ function entityNode(entity: BaseEntity, kind: EntityKind, description?: string):
   node.description = description ?? entity.status;
   node.tooltip = `${entity.id} — ${entity.title}\nstatus: ${entity.status}`;
   node.iconPath = statusIcon(entity.status);
-  node.command = openCommand(entity.filePath);
+  node.command = openItemCommand(entity.id);
   node.contextValue = kind;
   node.itemId = entity.id;
   return node;
@@ -101,7 +107,8 @@ export class SprintProvider extends TreeProviderBase {
     goal.description = sprint.status;
     goal.iconPath = new vscode.ThemeIcon('rocket');
     goal.tooltip = `${sprint.id}\nstatus: ${sprint.status}`;
-    goal.command = openCommand(sprint.filePath);
+    goal.command = openItemCommand(sprint.id);
+    goal.itemId = sprint.id;
 
     const nodes: ShipyardNode[] = [goal];
 
@@ -168,7 +175,7 @@ export class SpecProvider extends TreeProviderBase {
       const done = children.filter((f) => ['done', 'released', 'deployed'].includes(f.status)).length;
       node.description = `${done}/${children.length} features`;
       node.iconPath = new vscode.ThemeIcon('milestone');
-      node.command = openCommand(epic.filePath);
+      node.command = openItemCommand(epic.id);
       node.contextValue = 'epic';
       node.itemId = epic.id;
       node.children = children.map((f) =>

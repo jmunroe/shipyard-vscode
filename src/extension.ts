@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ShipyardStore } from './store';
 import { DashboardPanel } from './dashboard';
+import { ViewerPanel } from './viewer';
+import { findEntity } from './viewer/resolve';
 import { sendToTerminal } from './terminal';
 import {
   BacklogProvider,
@@ -10,6 +12,16 @@ import {
   SpecProvider,
   SprintProvider,
 } from './views';
+
+/** Resolve an entity id to its file and open it in the raw text editor. */
+async function openRaw(store: ShipyardStore, itemId: string): Promise<void> {
+  const item = findEntity(store.getData(), itemId);
+  if (!item) {
+    vscode.window.showInformationMessage(`Shipyard: ${itemId} no longer exists.`);
+    return;
+  }
+  await vscode.window.showTextDocument(vscode.Uri.file(item.filePath));
+}
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const store = new ShipyardStore();
@@ -36,6 +48,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       await vscode.window.showTextDocument(uri);
     }),
     vscode.commands.registerCommand('shipyard.openDashboard', () => DashboardPanel.show(store)),
+    // Entity-node click target (also reused by T020's cross-ref command: URIs).
+    // `preview` (default) opens the rendered viewer; `editor` opens the raw .md.
+    vscode.commands.registerCommand('shipyard.openItem', async (itemId?: string) => {
+      if (!itemId) return;
+      const behavior = vscode.workspace
+        .getConfiguration('shipyard')
+        .get<string>('openBehavior', 'preview');
+      if (behavior === 'editor') {
+        await openRaw(store, itemId);
+        return;
+      }
+      ViewerPanel.show(store, itemId);
+    }),
+    // Context action: always open the raw .md regardless of openBehavior.
+    vscode.commands.registerCommand('shipyard.openRawFile', async (node?: ShipyardNode) => {
+      if (!node?.itemId) return;
+      await openRaw(store, node.itemId);
+    }),
   );
 
   // Global send commands: each types its mapped plugin-namespaced slash command
