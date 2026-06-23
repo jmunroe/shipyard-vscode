@@ -4,6 +4,28 @@ All notable changes to the Shipyard VS Code extension are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-23
+
+### Added
+
+- **Shipyard viewer webview** (F007): clicking an entity node (feature, epic,
+  task, bug, idea, or the sprint goal) now opens a rendered viewer — frontmatter
+  as labelled, status-coloured chips and the Markdown body rendered via
+  markdown-it — instead of the raw `.md`. Cross-references (epic, dependencies,
+  graduated_to, tasks, children) are clickable links that re-render the same
+  reused panel; dangling refs show as muted text and `external_refs` stay plain.
+  A new `shipyard.openBehavior` setting (`preview` default | `editor`) and an
+  "Open raw file" context action keep the raw file one click away. The viewer
+  reuses the dashboard's hardened no-script CSP shell (`enableScripts: false`,
+  `enableCommandUris: true`), live-refreshes on edit (debounced), and shows a
+  graceful "no longer exists" state when the underlying file is deleted.
+
+### Security
+
+- The viewer sanitizes Markdown body link schemes (allowlist — `command:`,
+  `javascript:`, `data:`, `file:` are rejected) so untrusted `.shipyard` content
+  cannot inject a live `command:` URI into the command-enabled webview.
+
 ## [0.3.0] - 2026-06-22
 
 ### Added
