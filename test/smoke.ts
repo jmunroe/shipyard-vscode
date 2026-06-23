@@ -261,6 +261,39 @@ console.log('viewer-render: ok');
 // findEntity resolves across pools and returns undefined for unknown ids.
 assert(findEntity(data, '___no-such-id___') === undefined, 'findEntity returns undefined for unknown id');
 console.log('viewer-resolve: ok');
+
+// --- T020: cross-ref navigation + dangling / external / deleted states ---
+const refData: ProjectData = {
+  projectName: 'Refs',
+  features: [
+    {
+      id: 'F003', title: 'Dashboard', status: 'released', epic: '', storyPoints: 5, riceScore: 0,
+      tasks: [], filePath: 'F003.md', body: '', frontmatter: {},
+    },
+  ],
+  tasks: [], epics: [], bugs: [], ideas: [], sprint: undefined, backlog: [],
+};
+const refItem: BaseEntity = {
+  id: 'F050',
+  title: 'References',
+  status: 'proposed',
+  filePath: 'F050.md',
+  body: '',
+  frontmatter: {
+    dependencies: ['F003'],   // resolvable → link
+    graduated_to: 'F099',     // dangling → muted, non-clickable
+    external_refs: ['JIRA-123'], // external → plain text, never a link
+  },
+};
+const refHtml = renderViewer(refItem, refData);
+assert(refHtml.includes('command:shipyard.openItem?'), 'resolvable cross-ref renders a command: link');
+assert(/command:shipyard\.openItem\?[^"]*">F003<\/a>/.test(refHtml), 'F003 dependency is a clickable link');
+assert(refHtml.includes('<span class="chip-dangling">F099</span>'), 'dangling ref renders as muted, non-clickable text');
+assert(refHtml.includes('JIRA-123'), 'external ref is shown');
+const linkCount = (refHtml.match(/command:shipyard\.openItem/g) || []).length;
+assert(linkCount === 1, `only the resolvable ref becomes a command link (F099/JIRA-123 must not), got ${linkCount}`);
+assert(!refHtml.includes('<script>'), 'cross-ref render has no <script>');
+console.log('viewer-crossref: ok');
 }
 
 main(dir);

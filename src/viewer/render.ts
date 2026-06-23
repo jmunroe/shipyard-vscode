@@ -8,8 +8,33 @@
 import MarkdownIt from 'markdown-it';
 import { BaseEntity, ProjectData } from '../shipyard/model';
 import { documentHead, escapeHtml } from '../dashboard/render';
+import { findEntity } from './resolve';
 
 const md = new MarkdownIt({ html: false, linkify: false });
+
+/**
+ * Frontmatter keys whose ids are Shipyard cross-references: resolvable ids
+ * become `command:shipyard.openItem` links (re-render this panel on the target),
+ * unresolved ids render as muted non-clickable text. `external_refs` is
+ * deliberately NOT here — external ids never become internal links.
+ */
+const CROSSREF_KEYS = new Set(['epic', 'feature', 'dependencies', 'graduated_to', 'tasks', 'children', 'parent']);
+
+/** A single cross-ref id → a command link if resolvable, else muted text. */
+function refLink(id: string, data: ProjectData | undefined): string {
+  const safeId = escapeHtml(id);
+  if (findEntity(data, id)) {
+    const arg = encodeURIComponent(JSON.stringify([id]));
+    return `<a href="command:shipyard.openItem?${arg}">${safeId}</a>`;
+  }
+  return `<span class="chip-dangling">${safeId}</span>`;
+}
+
+/** A scalar or list of cross-ref ids rendered as comma-separated links/muted text. */
+function crossRefValue(value: unknown, data: ProjectData | undefined): string {
+  const ids = (Array.isArray(value) ? value : [value]).map((v) => String(v).trim()).filter(Boolean);
+  return ids.map((id) => refLink(id, data)).join(', ');
+}
 
 /** Frontmatter fields surfaced as labelled chips, in display order. */
 const CHIP_FIELDS: Array<{ key: string; label: string }> = [
@@ -65,16 +90,32 @@ function chipValue(value: unknown): string | undefined {
   return s ? s : undefined;
 }
 
-function chip(label: string, value: string, cls = ''): string {
-  return `<span class="chip ${cls}"><span class="chip-label">${escapeHtml(label)}</span><span class="chip-value">${escapeHtml(value)}</span></span>`;
+/** A chip whose value is already-trusted HTML (e.g. cross-ref links) — not escaped. */
+function chipRaw(label: string, valueHtml: string, cls = ''): string {
+  return `<span class="chip ${cls}"><span class="chip-label">${escapeHtml(label)}</span><span class="chip-value">${valueHtml}</span></span>`;
 }
 
-/** Frontmatter as a row of labelled chips (status first, then curated fields). */
-function chips(item: BaseEntity): string {
+/** A chip whose value is plain dynamic text — escaped. */
+function chip(label: string, value: string, cls = ''): string {
+  return chipRaw(label, escapeHtml(value), cls);
+}
+
+/**
+ * Frontmatter as a row of labelled chips (status first, then curated fields).
+ * Cross-reference fields render their ids as `command:` links (resolvable) or
+ * muted text (dangling); everything else, including `external_refs`, is plain.
+ */
+function chips(item: BaseEntity, data: ProjectData | undefined): string {
   const out: string[] = [chip('status', item.status, statusClass(item.status))];
   for (const { key, label } of CHIP_FIELDS) {
-    const val = chipValue(item.frontmatter[key]);
-    if (val !== undefined) {
+    const raw = item.frontmatter[key];
+    const val = chipValue(raw);
+    if (val === undefined) {
+      continue;
+    }
+    if (CROSSREF_KEYS.has(key)) {
+      out.push(chipRaw(label, crossRefValue(raw, data)));
+    } else {
       out.push(chip(label, val));
     }
   }
@@ -134,16 +175,15 @@ ${documentHead(VIEWER_STYLE, 'Shipyard Viewer')}
 /**
  * Render an entity to the viewer HTML: frontmatter as labelled chips and the
  * Markdown body rendered to HTML under the dashboard's hardened no-script CSP.
- * `data` is used in T020 for cross-reference link resolution.
+ * `data` resolves cross-reference ids to clickable `command:` links.
  */
 export function renderViewer(item: BaseEntity, data: ProjectData | undefined): string {
-  void data;
   return `<!DOCTYPE html>
 <html lang="en">
 ${documentHead(VIEWER_STYLE, `Shipyard: ${item.id}`)}
 <body>
   <h1>${escapeHtml(item.id)} <span class="title">${escapeHtml(item.title)}</span></h1>
-  ${chips(item)}
+  ${chips(item, data)}
   ${renderBody(item)}
 </body>
 </html>`;
