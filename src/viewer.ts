@@ -70,16 +70,23 @@ export class ViewerPanel {
 
   /** Read-only: resolve the current item from the store and write the HTML. */
   private render(): void {
-    const data = this.store.getData();
-    const item = findEntity(data, this.itemId);
-    // Deleted-while-open: the tracked item vanished after a store refresh.
-    if (!item) {
+    try {
+      const data = this.store.getData();
+      const item = findEntity(data, this.itemId);
+      // Deleted-while-open: the tracked item vanished after a store refresh.
+      if (!item) {
+        this.panel.title = 'Shipyard Viewer';
+        this.panel.webview.html = renderMissing(this.itemId);
+        return;
+      }
+      this.panel.title = `Shipyard: ${item.id}`;
+      this.panel.webview.html = renderViewer(item, data);
+    } catch {
+      // A render failure must not throw out of the onDidChange debounce callback
+      // (unhandled rejection + stale panel). Fall back to the empty state.
       this.panel.title = 'Shipyard Viewer';
       this.panel.webview.html = renderMissing(this.itemId);
-      return;
     }
-    this.panel.title = `Shipyard: ${item.id}`;
-    this.panel.webview.html = renderViewer(item, data);
   }
 
   private dispose(): void {

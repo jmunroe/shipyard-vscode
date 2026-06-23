@@ -14,6 +14,9 @@ export function findEntity(data: ProjectData | undefined, id: string): BaseEntit
   if (!data || !id) {
     return undefined;
   }
+  // First-wins precedence (features → epics → tasks → bugs → ideas → sprint).
+  // Ids are conventionally prefixed (F/E/T/B/IDEA) so cross-pool collisions don't
+  // occur in practice; the order is fixed so resolution is deterministic if they did.
   const pools: BaseEntity[][] = [data.features, data.epics, data.tasks, data.bugs, data.ideas];
   for (const pool of pools) {
     const hit = pool.find((e) => e.id === id);

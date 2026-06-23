@@ -258,6 +258,29 @@ assert(/no longer exists/i.test(missingHtml), 'missing-item state shows a "no lo
 assert(!missingHtml.includes('<script>'), 'missing-item state has no <script>');
 console.log('viewer-render: ok');
 
+// --- Security: hostile links in the Markdown body must not become live URIs ---
+// markdown-it blocks javascript:/data: by default but NOT command:; with the
+// webview's enableCommandUris:true an unsanitised command: link would be a live
+// arbitrary-command trigger. The validateLink override must drop these.
+const hostileLinks: BaseEntity = {
+  id: 'F060',
+  title: 'Hostile links',
+  status: 'proposed',
+  filePath: 'F060.md',
+  body: [
+    '[run](command:workbench.action.terminal.sendSequence?%7B%22text%22%3A%22rm%22%7D)',
+    '[js](javascript:alert(1))',
+    '![pixel](https://evil.example/p.png)',
+    '[ok](https://example.com)',
+  ].join('\n\n'),
+  frontmatter: {},
+};
+const hostileHtml = renderViewer(hostileLinks, undefined);
+assert(!/href="command:/.test(hostileHtml), 'command: links in the body must not become live hrefs');
+assert(!/href="javascript:/.test(hostileHtml), 'javascript: links in the body must not become live hrefs');
+assert(hostileHtml.includes('href="https://example.com"'), 'safe https links in the body still render');
+console.log('viewer-body-link-safety: ok');
+
 // findEntity resolves across pools and returns undefined for unknown ids.
 assert(findEntity(data, '___no-such-id___') === undefined, 'findEntity returns undefined for unknown id');
 console.log('viewer-resolve: ok');

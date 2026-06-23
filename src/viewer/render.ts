@@ -11,6 +11,14 @@ import { documentHead, escapeHtml } from '../dashboard/render';
 import { findEntity } from './resolve';
 
 const md = new MarkdownIt({ html: false, linkify: false });
+// markdown-it's default validateLink blocks javascript:/vbscript:/file:/data: but
+// NOT command:. The viewer webview runs with enableCommandUris:true, so an
+// unsanitised command: link in untrusted body Markdown would become a live
+// arbitrary-VS-Code-command trigger on click — a read-only-boundary break. Allow
+// only safe display schemes; in particular reject command:. Internal cross-ref
+// navigation goes through the hardcoded chip links (refLink), never body links.
+const SAFE_LINK = /^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i;
+md.validateLink = (url) => SAFE_LINK.test(url.trim());
 
 /**
  * Frontmatter keys whose ids are Shipyard cross-references: resolvable ids
