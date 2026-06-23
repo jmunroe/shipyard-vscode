@@ -64,6 +64,16 @@
           "default": 1500,
           "minimum": 0,
           "description": "Milliseconds to wait after running the launch command before sending the slash command, so it isn't typed before Claude Code is ready. Increase if commands are dropped on a cold start."
+        },
+        "shipyard.openBehavior": {
+          "type": "string",
+          "enum": ["preview", "editor"],
+          "enumDescriptions": [
+            "Open the rendered Shipyard viewer (frontmatter as chips, Markdown body, clickable cross-references).",
+            "Open the raw .md file in the text editor (the pre-viewer behavior)."
+          ],
+          "default": "preview",
+          "description": "What clicking a Shipyard entity node opens. 'preview' (default) opens the rendered viewer; 'editor' opens the raw .md file. The 'Open raw file' context action always opens the raw .md regardless of this setting."
         }
       }
     },
@@ -150,6 +160,14 @@
       {
         "command": "shipyard.debugBug",
         "title": "Debug in Shipyard"
+      },
+      {
+        "command": "shipyard.openItem",
+        "title": "Shipyard: Open Item"
+      },
+      {
+        "command": "shipyard.openRawFile",
+        "title": "Open raw file"
       }
     ],
     "menus": {
@@ -205,6 +223,11 @@
           "command": "shipyard.debugBug",
           "when": "viewItem == bug",
           "group": "shipyard"
+        },
+        {
+          "command": "shipyard.openRawFile",
+          "when": "viewItem == feature || viewItem == epic || viewItem == task || viewItem == bug || viewItem == idea",
+          "group": "shipyard"
         }
       ]
     }
@@ -219,10 +242,12 @@
     "vscode:prepublish": "node esbuild.mjs --production"
   },
   "dependencies": {
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.0"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@types/markdown-it": "^14.1.2",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.0.0",
