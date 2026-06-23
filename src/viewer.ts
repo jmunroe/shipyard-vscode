@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ShipyardStore } from './store';
-import { escapeHtml } from './dashboard/render';
 import { findEntity } from './viewer/resolve';
+import { renderViewer, renderMissing } from './viewer/render';
 
 /** Trailing debounce (ms) — coalesce the watcher's burst of events per write. */
 const REFRESH_DEBOUNCE_MS = 100;
@@ -70,30 +70,16 @@ export class ViewerPanel {
 
   /** Read-only: resolve the current item from the store and write the HTML. */
   private render(): void {
-    const item = findEntity(this.store.getData(), this.itemId);
-    this.panel.title = item ? `Shipyard: ${item.id}` : 'Shipyard Viewer';
-    // T018 placeholder — the chips + Markdown body land in T019.
-    const heading = item
-      ? `<h1>${escapeHtml(item.id)}</h1><p>${escapeHtml(item.title)}</p><p class="muted">${escapeHtml(item.status)}</p>`
-      : `<h1 class="muted">${escapeHtml(this.itemId)}</h1><p class="muted">This item no longer exists.</p>`;
-    this.panel.webview.html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shipyard Viewer</title>
-  <style>
-    body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); background: var(--vscode-editor-background); padding: 0 1rem 2rem; line-height: 1.5; }
-    h1 { font-size: 1.4rem; margin: 1rem 0 0.25rem; }
-    .muted { color: var(--vscode-descriptionForeground); }
-  </style>
-</head>
-<body>
-  ${heading}
-</body>
-</html>`;
+    const data = this.store.getData();
+    const item = findEntity(data, this.itemId);
+    // Deleted-while-open: the tracked item vanished after a store refresh.
+    if (!item) {
+      this.panel.title = 'Shipyard Viewer';
+      this.panel.webview.html = renderMissing(this.itemId);
+      return;
+    }
+    this.panel.title = `Shipyard: ${item.id}`;
+    this.panel.webview.html = renderViewer(item, data);
   }
 
   private dispose(): void {

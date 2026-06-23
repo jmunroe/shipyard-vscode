@@ -3,7 +3,9 @@
 import { loadProject } from '../src/shipyard/repository';
 import { computeDashboardModel, computeVelocityTrends, DashboardModel } from '../src/dashboard/model';
 import { renderDashboardHtml, renderDashboard } from '../src/dashboard/render';
-import { ProjectData } from '../src/shipyard/model';
+import { renderViewer, renderMissing } from '../src/viewer/render';
+import { findEntity } from '../src/viewer/resolve';
+import { BaseEntity, ProjectData } from '../src/shipyard/model';
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) {
@@ -213,6 +215,52 @@ assert(
 );
 assert(!singleWeekHtml.includes('<script>'), 'single-week velocity render must not contain a raw <script>');
 console.log('velocity-render: ok');
+
+// --- T019: viewer render (frontmatter chips + markdown-it body, no-script) ---
+const viewerItem: BaseEntity = {
+  id: 'F042',
+  title: 'Sample feature',
+  status: 'in-progress',
+  filePath: 'F042.md',
+  body: [
+    '## Overview',
+    '',
+    'Some **bold** text and a hostile <script>alert(1)</script> tag.',
+    '',
+    '```mermaid',
+    'graph TD; A-->B;',
+    '```',
+    '',
+  ].join('\n'),
+  frontmatter: {
+    status: 'in-progress',
+    story_points: 5,
+    complexity: 'medium',
+    rice_score: 1.92,
+    epic: 'E001',
+    dependencies: ['F003'],
+  },
+};
+const viewerHtml = renderViewer(viewerItem, undefined);
+assert(viewerHtml.includes('class="chips"'), 'viewer renders a chips row');
+assert(viewerHtml.includes('chip-value'), 'viewer renders chip values');
+assert(viewerHtml.includes('>5<'), 'story_points chip value is present');
+assert(/<h2[ >]/.test(viewerHtml), 'markdown body rendered to HTML (h2 element present)');
+assert(viewerHtml.includes('<strong>'), 'markdown bold rendered to <strong>');
+assert(viewerHtml.includes('graph TD'), 'mermaid fence content present as a code block');
+assert(!/class="mermaid"/.test(viewerHtml), 'mermaid block is not rendered as a diagram');
+assert(!viewerHtml.includes('<script>'), 'viewer output must not contain a literal <script> (html:false + CSP)');
+assert(viewerHtml.includes('&lt;script&gt;'), 'hostile HTML in the body must be escaped');
+assert(viewerHtml.includes('var(--vscode-'), 'viewer HTML uses var(--vscode-*) theming');
+
+const missingHtml = renderMissing('F999');
+assert(/no longer exists/i.test(missingHtml), 'missing-item state shows a "no longer exists" message');
+assert(!missingHtml.includes('<script>'), 'missing-item state has no <script>');
+console.log('viewer-render: ok');
+
+// findEntity resolves across pools and returns undefined for unknown ids.
+assert(findEntity(data, '___no-such-id___') === undefined, 'findEntity returns undefined for unknown id');
+console.log('viewer-resolve: ok');
 }
 
 main(dir);

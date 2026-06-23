@@ -7,6 +7,8 @@ export interface BaseEntity {
   title: string;
   status: string;
   filePath: string;
+  /** Raw Markdown body (everything after the frontmatter block), for the viewer. */
+  body: string;
   /** Raw parsed frontmatter, for fields not surfaced as typed properties. */
   frontmatter: Record<string, unknown>;
 }
@@ -37,6 +39,8 @@ export interface Sprint {
   goal: string;
   status: string;
   filePath: string;
+  /** Raw Markdown body (everything after the frontmatter block), for the viewer. */
+  body: string;
   /** Each wave is an ordered list of task IDs. */
   waves: string[][];
   frontmatter: Record<string, unknown>;

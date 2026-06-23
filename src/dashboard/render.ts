@@ -16,13 +16,13 @@ import {
 } from './model';
 
 /** Shared document head: charset, strict CSP, viewport, title, and styles. */
-function documentHead(style: string): string {
+export function documentHead(style: string, title = 'Shipyard Dashboard'): string {
   return `<head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shipyard Dashboard</title>
+  <title>${escapeHtml(title)}</title>
   ${style}
 </head>`;
 }

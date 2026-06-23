@@ -28,6 +28,7 @@ export function findEntity(data: ProjectData | undefined, id: string): BaseEntit
       title: sprint.goal || sprint.id,
       status: sprint.status,
       filePath: sprint.filePath,
+      body: sprint.body,
       frontmatter: sprint.frontmatter,
     };
   }

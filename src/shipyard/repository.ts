@@ -125,6 +125,7 @@ async function loadSprint(shipyardDir: string): Promise<Sprint | undefined> {
     goal: str(data.goal) ?? '',
     status: str(data.status) ?? 'unknown',
     filePath: file,
+    body: content,
     waves: parseWaves(content),
     frontmatter: data,
   };
@@ -144,6 +145,7 @@ export async function loadProject(shipyardDir: string): Promise<ProjectData> {
         riceScore: num(data.rice_score),
         tasks: Array.isArray(data.tasks) ? (data.tasks as string[]) : [],
         filePath: file,
+        body: content,
         frontmatter: data,
       })),
       loadEntities<Task>(path.join(spec, 'tasks'), ({ data, content }, file) => ({
@@ -154,6 +156,7 @@ export async function loadProject(shipyardDir: string): Promise<ProjectData> {
         effort: str(data.effort),
         kind: str(data.kind),
         filePath: file,
+        body: content,
         frontmatter: data,
       })),
       loadEntities<Epic>(path.join(spec, 'epics'), ({ data, content }, file) => ({
@@ -161,6 +164,7 @@ export async function loadProject(shipyardDir: string): Promise<ProjectData> {
         title: deriveTitle(data, content, file),
         status: str(data.status) ?? 'proposed',
         filePath: file,
+        body: content,
         frontmatter: data,
       })),
       loadEntities<Bug>(path.join(spec, 'bugs'), ({ data, content }, file) => ({
@@ -169,6 +173,7 @@ export async function loadProject(shipyardDir: string): Promise<ProjectData> {
         status: str(data.status) ?? 'open',
         severity: str(data.severity),
         filePath: file,
+        body: content,
         frontmatter: data,
       })),
       loadEntities<Idea>(path.join(spec, 'ideas'), ({ data, content }, file) => ({
@@ -176,6 +181,7 @@ export async function loadProject(shipyardDir: string): Promise<ProjectData> {
         title: deriveTitle(data, content, file),
         status: str(data.status) ?? 'proposed',
         filePath: file,
+        body: content,
         frontmatter: data,
       })),
       loadSprint(shipyardDir),
